@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyFeed — Smart Meal Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf8f4; --warm-white: #fff9f2;
+    --sage: #7c9e87; --sage-light: #a8c4b0; --sage-dark: #5a7a65;
+    --terra: #c4724a; --terra-light: #e8a882;
+    --gold: #d4a84b;
+    --charcoal: #2d2d2d; --mid-gray: #6b6b6b;
+    --light-gray: #e8e4df; --border: #ddd8d0;
+    --card: #ffffff;
+    --shadow: 0 2px 16px rgba(0,0,0,0.07);
+    --shadow-hover: 0 6px 28px rgba(0,0,0,0.13);
+    --r: 14px; --rs: 8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charcoal);min-height:100vh;font-size:15px;}
+
+  /* ── NAV ── */
+  nav{background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;padding:0 24px;}
+  .nav-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px;}
+  .brand{font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--sage-dark);font-weight:600;letter-spacing:-.3px;cursor:pointer;}
+  .brand span{color:var(--terra);}
+  .nav-tabs{display:flex;gap:4px;}
+  .nav-tab{padding:7px 15px;border-radius:30px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--mid-gray);transition:all .2s;}
+  .nav-tab:hover{background:var(--cream);color:var(--charcoal);}
+  .nav-tab.active{background:var(--sage);color:#fff;}
+  .nav-tab .badge{background:var(--terra);color:#fff;font-size:10px;border-radius:10px;padding:1px 6px;margin-left:5px;font-weight:700;}
+  .nav-settings-btn{padding:7px 14px;border-radius:30px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-size:13px;font-weight:600;color:var(--mid-gray);transition:all .2s;font-family:'DM Sans',sans-serif;}
+  .nav-settings-btn:hover{border-color:var(--sage);color:var(--sage-dark);}
+
+  /* ── PAGES ── */
+  .page{display:none;max-width:1140px;margin:0 auto;padding:32px 24px;}
+  .page.active{display:block;}
+  .page-header{margin-bottom:28px;}
+  .page-header h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;line-height:1.2;}
+  .page-header p{color:var(--mid-gray);margin-top:6px;font-size:15px;}
+
+  /* ── ONBOARDING MODAL ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(45,45,45,.55);z-index:500;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--card);border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+  .modal-header{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;}
+  .modal-header h2{font-family:'Playfair Display',serif;font-size:1.5rem;}
+  .modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:var(--mid-gray);line-height:1;padding:0;}
+  .modal-body{padding:20px 28px 28px;}
+  .modal-step{display:none;}
+  .modal-step.active{display:block;}
+  .step-indicator{display:flex;gap:6px;margin-bottom:20px;}
+  .step-dot{width:8px;height:8px;border-radius:50%;background:var(--light-gray);transition:all .25s;}
+  .step-dot.active{background:var(--sage);width:22px;border-radius:4px;}
+  .step-dot.done{background:var(--sage-light);}
+
+  /* ── SETTINGS PAGE ── */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:680px){.settings-grid{grid-template-columns:1fr;}}
+
+  /* ── SETUP PAGE ── */
+  .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media(max-width:680px){.setup-grid{grid-template-columns:1fr;}}
+
+  /* ── CARDS ── */
+  .card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:24px;box-shadow:var(--shadow);}
+  .card-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:600;margin-bottom:16px;color:var(--charcoal);}
+
+  /* ── BUTTONS ── */
+  .btn{padding:10px 20px;border-radius:30px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:7px;}
+  .btn-primary{background:var(--sage);color:#fff;}
+  .btn-primary:hover{background:var(--sage-dark);transform:translateY(-1px);box-shadow:0 4px 14px rgba(92,122,101,.35);}
+  .btn-secondary{background:var(--cream);color:var(--charcoal);border:1.5px solid var(--border);}
+  .btn-secondary:hover{border-color:var(--sage);color:var(--sage-dark);}
+  .btn-danger{background:#fff0ec;color:var(--terra);border:1.5px solid #f5c4b3;}
+  .btn-danger:hover{background:var(--terra);color:#fff;}
+  .btn-gold{background:var(--gold);color:#fff;}
+  .btn-gold:hover{background:#c4963a;transform:translateY(-1px);}
+  .btn-sm{padding:7px 14px;font-size:13px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+  .btn-full{width:100%;justify-content:center;}
+
+  /* ── INPUTS ── */
+  .form-group{margin-bottom:18px;}
+  label{display:block;font-size:12px;font-weight:700;color:var(--mid-gray);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+  input[type="number"],input[type="text"],input[type="password"],select,textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:15px;background:var(--warm-white);color:var(--charcoal);transition:border .2s;outline:none;}
+  input:focus,select:focus,textarea:focus{border-color:var(--sage);}
+
+  /* ── PILLS & TAGS ── */
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{padding:6px 14px;border-radius:20px;background:var(--cream);border:1.5px solid var(--border);font-size:13px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:500;}
+  .pill.active{background:var(--terra);border-color:var(--terra);color:#fff;}
+  .tag-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .tag{padding:7px 14px;border-radius:30px;border:1.5px solid var(--border);background:var(--warm-white);font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;user-select:none;}
+  .tag:hover{border-color:var(--sage-light);}
+  .tag.selected{background:var(--sage);border-color:var(--sage);color:#fff;}
+
+  /* ── RANGE ── */
+  .range-row{display:flex;align-items:center;gap:12px;}
+  .range-row input[type="range"]{flex:1;accent-color:var(--sage);}
+  .range-val{font-weight:700;color:var(--sage-dark);min-width:60px;text-align:right;}
+  .info-tip{font-size:12px;color:var(--mid-gray);background:var(--cream);padding:8px 12px;border-radius:var(--rs);border-left:3px solid var(--sage);margin-top:8px;}
+
+  /* ── BLOCKED FOODS ── */
+  .blocked-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;min-height:36px;}
+  .blocked-chip{padding:5px 10px 5px 14px;border-radius:30px;background:#fff0ec;border:1.5px solid #f5c4b3;color:var(--terra);font-size:13px;display:flex;align-items:center;gap:6px;}
+  .blocked-chip button{background:none;border:none;cursor:pointer;color:var(--terra);font-size:16px;line-height:1;padding:0;font-weight:700;}
+  .blocked-input-row{display:flex;gap:10px;margin-top:10px;}
+  .blocked-input-row input{flex:1;}
+  .divider{height:1px;background:var(--border);margin:18px 0;}
+
+  /* ── MEAL PLAN ── */
+  .days-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;margin-bottom:22px;}
+  .day-tab{flex-shrink:0;padding:10px 18px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-size:14px;font-weight:600;transition:all .18s;text-align:center;min-width:70px;}
+  .day-tab:hover{border-color:var(--sage-light);}
+  .day-tab.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+  .day-tab .cost{font-size:11px;font-weight:400;opacity:.8;margin-top:2px;}
+
+  .day-summary{background:linear-gradient(135deg,var(--sage) 0%,var(--sage-dark) 100%);color:#fff;border-radius:var(--r);padding:18px 22px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+  .day-summary .total{font-size:1.3rem;font-weight:700;}
+  .day-summary .label{font-size:12px;opacity:.8;}
+  .day-summary .macros{display:flex;gap:20px;}
+  .day-summary .macro .val{font-size:1.05rem;font-weight:700;}
+  .day-summary .macro .key{font-size:11px;opacity:.8;text-transform:uppercase;}
+
+  .macro-bar{margin-bottom:18px;padding:14px 18px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);}
+  .macro-bar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--mid-gray);margin-bottom:5px;}
+  .macro-bar-track{height:7px;background:var(--light-gray);border-radius:10px;overflow:hidden;display:flex;}
+  .macro-bar-protein{background:var(--terra);}
+  .macro-bar-carbs{background:var(--gold);}
+  .macro-bar-fat{background:var(--sage);}
+
+  /* ── MEAL CARD ── */
+  .meal-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);transition:box-shadow .2s;}
+  .meal-card:hover{box-shadow:var(--shadow-hover);}
+  .meal-img-wrap{width:100%;height:190px;overflow:hidden;position:relative;background:var(--light-gray);}
+  .meal-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease;}
+  .meal-card:hover .meal-img-wrap img{transform:scale(1.04);}
+  .meal-img-credit{position:absolute;bottom:6px;right:8px;font-size:10px;color:rgba(255,255,255,.75);text-decoration:none;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+  .meal-img-skeleton{width:100%;height:190px;background:linear-gradient(90deg,var(--light-gray) 25%,var(--border) 50%,var(--light-gray) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .meal-img-none{width:100%;height:0;display:none;}
+  .meal-body{padding:18px 20px;}
+  .meal-type-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sage);margin-bottom:4px;}
+  .meal-name{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;}
+  .meal-meta{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
+  .meal-meta span{font-size:13px;color:var(--mid-gray);}
+  .meal-cost{font-size:1.1rem;font-weight:700;color:var(--terra);white-space:nowrap;}
+  .meal-desc{font-size:13px;color:var(--mid-gray);margin-top:8px;line-height:1.6;}
+  .meal-ingredients{margin-top:10px;}
+  .meal-ingredients strong{font-size:13px;color:var(--charcoal);}
+  .ingredient-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+  .ingredient-chip{font-size:12px;padding:4px 10px;background:var(--cream);border-radius:20px;border:1px solid var(--border);color:var(--mid-gray);}
+  .meal-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+
+  /* ── GROCERY ── */
+  .grocery-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:700px){.grocery-grid{grid-template-columns:1fr;}}
+  .grocery-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sage);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .grocery-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--light-gray);}
+  .grocery-item:last-child{border-bottom:none;}
+  .grocery-item input[type="checkbox"]{accent-color:var(--sage);width:16px;height:16px;cursor:pointer;flex-shrink:0;}
+  .grocery-item .item-name{flex:1;font-size:14px;}
+  .grocery-item .item-name.checked{text-decoration:line-through;color:var(--mid-gray);}
+  .grocery-item .item-qty{font-size:13px;color:var(--mid-gray);}
+  .grocery-item .item-cost{font-size:13px;font-weight:600;color:var(--terra);}
+
+  /* ── SAVED ── */
+  .saved-tabs{display:flex;gap:8px;margin-bottom:20px;}
+  .saved-tab-btn{padding:9px 20px;border-radius:30px;border:1.5px solid var(--border);background:var(--card);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;color:var(--mid-gray);}
+  .saved-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#fff;}
+  .saved-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .saved-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow);}
+
+  /* ── LOADING ── */
+  .loading-overlay{display:none;position:fixed;inset:0;background:rgba(250,248,244,.92);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+  .loading-overlay.show{display:flex;}
+  .spinner{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:15px;color:var(--mid-gray);font-weight:500;}
+  .loading-sub{font-size:13px;color:var(--sage);}
+
+  /* ── EMPTY STATE ── */
+  .empty-state{text-align:center;padding:60px 24px;}
+  .empty-icon{font-size:3rem;margin-bottom:14px;}
+  .empty-state h3{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px;}
+  .empty-state p{color:var(--mid-gray);margin-bottom:20px;}
+
+  /* ── TOAST ── */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--charcoal);color:#fff;padding:12px 20px;border-radius:var(--rs);font-size:14px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.success{background:var(--sage-dark);}
+  .toast.error{background:#c0392b;}
+
+  /* ── ONBOARDING ── */
+  .onboard-welcome{text-align:center;padding:10px 0 20px;}
+  .onboard-welcome .logo{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--sage-dark);margin-bottom:8px;}
+  .onboard-welcome .logo span{color:var(--terra);}
+  .onboard-welcome p{color:var(--mid-gray);font-size:15px;line-height:1.6;}
+
+  /* ── SETTINGS PILL ── */
+  .pill.active-store{background:var(--sage);border-color:var(--sage);color:#fff;}
+
+  .week-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+
+  /* ── KEY ROW ── */
+  .key-row{display:flex;gap:8px;}
+  .key-row input{flex:1;}
+
+  .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--mid-gray);margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Building your plan…</div>
+  <div class="loading-sub" id="loading-sub">Personalizing for your goals</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════ ONBOARDING MODAL ══════════════ -->
+<div class="modal-overlay" id="onboard-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div></div>
+      <button class="modal-close" onclick="skipOnboarding()" title="Skip">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="step-indicator" id="step-dots"></div>
+
+      <!-- Step 1: Welcome -->
+      <div class="modal-step active" id="step-1">
+        <div class="onboard-welcome">
+          <div class="logo">Easy<span>Feed</span></div>
+          <p>Your personal AI meal planner. Let's set up your account — this only takes a minute and you won't need to do it again.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary btn-full" onclick="nextStep()">Get Started →</button>
+          <button class="btn btn-secondary btn-full" onclick="skipOnboarding()">Skip for now</button>
+        </div>
+      </div>
+
+      <!-- Step 2: OpenAI Key -->
+      <div class="modal-step" id="step-2">
+        <div class="card-title" style="margin-bottom:6px">🤖 OpenAI API Key</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:16px">EasyFeed uses GPT-4o to generate your personalized meal plans. Your key is saved locally in your browser and never leaves your device.</p>
+        <div class="form-group">
+          <label>API Key</label>
+          <div class="key-row">
+            <input type="password" id="ob-openai-key" placeholder="sk-…">
+            <button class="btn btn-secondary btn-sm" onclick="toggleVis('ob-openai-key')">👁️</button>
+          </div>
+          <p style="font-size:12px;color:var(--mid-gray);margin-top:6px">Get yours at <a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--sage-dark)">platform.openai.com/api-keys</a></p>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Unsplash Key <span style="font-weight:400;text-transform:none">(optional — for meal photos)</span></label>
+          <div class="key-row">
+            <input type="password" id="ob-unsplash-key" placeholder="Your Unsplash Access Key…">
+            <button class="btn btn-secondary btn-sm" onclick="toggleVis('ob-unsplash-key')">👁️</button>
+          </div>
+          <p style="font-size:12px;color:var(--mid-gray);margin-top:6px">Free at <a href="https://unsplash.com/developers" target="_blank" style="color:var(--sage-dark)">unsplash.com/developers</a></p>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button class="btn btn-secondary btn-sm" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveStepKeys()">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Location -->
+      <div class="modal-step" id="step-3">
+        <div class="card-title" style="margin-bottom:6px">📍 Your Location</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:16px">Used to estimate local grocery prices more accurately. We never share or store this.</p>
+        <div class="form-group">
+          <label>City or Region</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="ob-location" placeholder="e.g. Salt Lake City, UT" style="flex:1">
+            <button class="btn btn-secondary btn-sm" id="ob-detect-btn" onclick="detectLocation('ob-location','ob-detect-btn')">📡 Detect</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Preferred Store Type</label>
+          <div class="pill-row" id="ob-store-pills">
+            <button class="pill active" data-val="budget">Budget (Walmart/Aldi)</button>
+            <button class="pill" data-val="mid">Mid-Range (Kroger)</button>
+            <button class="pill" data-val="premium">Premium (Whole Foods)</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button class="btn btn-secondary btn-sm" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveStepLocation()">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Done -->
+      <div class="modal-step" id="step-4">
+        <div style="text-align:center;padding:10px 0 20px;">
+          <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+          <div class="card-title" style="font-size:1.3rem;margin-bottom:8px;">You're all set!</div>
+          <p style="color:var(--mid-gray);font-size:14px;line-height:1.6;">Now head to the Goals page to set your budget, calorie target, and dietary preferences — then generate your first meal plan.</p>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="finishOnboarding()">Let's Go 🌿</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <div class="nav-inner">
+    <div class="brand" onclick="showPage('goals')">Easy<span>Feed</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('goals')">🎯 Goals</button>
+      <button class="nav-tab" onclick="showPage('mealplan')" id="tab-mealplan">🥗 Meal Plan</button>
+      <button class="nav-tab" onclick="showPage('grocery')" id="tab-grocery">🛒 Groceries</button>
+      <button class="nav-tab" onclick="showPage('saved')" id="tab-saved">❤️ Saved <span class="badge" id="saved-badge" style="display:none">0</span></button>
+    </div>
+    <button class="nav-settings-btn" onclick="showPage('settings')">⚙️ Settings</button>
+  </div>
+</nav>
+
+<!-- ══════════════ GOALS PAGE ══════════════ -->
+<div class="page active" id="page-goals">
+  <div class="page-header">
+    <h1>Your Goals</h1>
+    <p>Set your weekly budget, calorie targets, and food preferences.</p>
+  </div>
+  <div class="setup-grid">
+    <!-- LEFT -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card">
+        <div class="card-title">📊 Weekly Budget</div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Total Weekly Food Budget</label>
+          <div class="range-row">
+            <span style="font-size:15px;color:var(--mid-gray)">$</span>
+            <input type="range" id="budget-slider" min="50" max="500" step="10" value="150" oninput="onBudgetChange(this.value)">
+            <span class="range-val" id="budget-val">$150</span>
+          </div>
+          <p class="info-tip">≈ <span id="per-day">$21</span>/day · <span id="per-meal">$7</span>/meal</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎯 Weight Goal</div>
+        <div class="form-group">
+          <label>Your Goal</label>
+          <div class="pill-row" id="goal-pills">
+            <button class="pill active" data-val="lose_fast">Lose Fast (−2lb/wk)</button>
+            <button class="pill" data-val="lose_slow">Lose Gradual (−1lb/wk)</button>
+            <button class="pill" data-val="maintain">Maintain</button>
+            <button class="pill" data-val="gain">Build Muscle</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Daily Calorie Target</label>
+          <div class="range-row">
+            <input type="range" id="cal-slider" min="1200" max="3500" step="50" value="1600" oninput="S.calories=parseInt(this.value);document.getElementById('cal-val').textContent=this.value+' kcal'">
+            <span class="range-val" id="cal-val">1600 kcal</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🍽️ Meals Per Day</div>
+        <div class="pill-row" id="meals-per-day-pills">
+          <button class="pill" data-val="2">2 meals</button>
+          <button class="pill active" data-val="3">3 meals</button>
+          <button class="pill" data-val="4">4 meals</button>
+          <button class="pill" data-val="5">5 meals</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">♻️ Ingredient Efficiency</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:14px">Control how many different items appear on your grocery list.</p>
+        <div class="form-group">
+          <label>Max Unique Grocery Items</label>
+          <div class="range-row">
+            <input type="range" id="max-ing-slider" min="10" max="50" step="5" value="25" oninput="S.maxIngredients=parseInt(this.value);document.getElementById('max-ing-val').textContent=this.value+' items'">
+            <span class="range-val" id="max-ing-val">25 items</span>
+          </div>
+          <p class="info-tip">Fewer = more meal overlap, simpler shopping. Meals will deliberately share proteins and vegetables.</p>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Pantry Staples You Already Have</label>
+          <div class="tag-group" id="pantry-tags">
+            <span class="tag selected" data-val="olive oil">🫒 Olive Oil</span>
+            <span class="tag selected" data-val="salt and pepper">🧂 Salt & Pepper</span>
+            <span class="tag selected" data-val="garlic">🧄 Garlic</span>
+            <span class="tag" data-val="onions">🧅 Onions</span>
+            <span class="tag" data-val="butter">🧈 Butter</span>
+            <span class="tag" data-val="soy sauce">🍶 Soy Sauce</span>
+            <span class="tag" data-val="rice">🍚 Rice</span>
+            <span class="tag" data-val="pasta">🍝 Pasta</span>
+            <span class="tag" data-val="canned tomatoes">🥫 Canned Tomatoes</span>
+            <span class="tag" data-val="broth">🥣 Broth</span>
+            <span class="tag" data-val="flour">🌾 Flour</span>
+            <span class="tag" data-val="eggs">🥚 Eggs</span>
+            <span class="tag" data-val="lemon">🍋 Lemon</span>
+            <span class="tag" data-val="hot sauce">🌶️ Hot Sauce</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card">
+        <div class="card-title">🥦 Dietary Restrictions</div>
+        <div class="tag-group" id="diet-tags">
+          <span class="tag" data-val="vegetarian">🌿 Vegetarian</span>
+          <span class="tag" data-val="vegan">🌱 Vegan</span>
+          <span class="tag" data-val="keto">🥑 Keto</span>
+          <span class="tag" data-val="paleo">🦴 Paleo</span>
+          <span class="tag" data-val="gluten-free">🚫🌾 Gluten-Free</span>
+          <span class="tag" data-val="dairy-free">🚫🥛 Dairy-Free</span>
+          <span class="tag" data-val="low-carb">📉 Low-Carb</span>
+          <span class="tag" data-val="high-protein">💪 High-Protein</span>
+          <span class="tag" data-val="mediterranean">🫒 Mediterranean</span>
+          <span class="tag" data-val="halal">☪️ Halal</span>
+          <span class="tag" data-val="kosher">✡️ Kosher</span>
+          <span class="tag" data-val="low-sodium">🧂 Low-Sodium</span>
+          <span class="tag" data-val="diabetic-friendly">🩺 Diabetic-Friendly</span>
+          <span class="tag" data-val="heart-healthy">❤️ Heart-Healthy</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🍜 Cuisine Preferences</div>
+        <div class="tag-group" id="cuisine-tags">
+          <span class="tag" data-val="american">🇺🇸 American</span>
+          <span class="tag" data-val="italian">🇮🇹 Italian</span>
+          <span class="tag" data-val="mexican">🇲🇽 Mexican</span>
+          <span class="tag" data-val="asian">🥢 Asian</span>
+          <span class="tag" data-val="mediterranean">🫒 Mediterranean</span>
+          <span class="tag" data-val="indian">🇮🇳 Indian</span>
+          <span class="tag" data-val="middle-eastern">🌙 Middle Eastern</span>
+          <span class="tag" data-val="greek">🇬🇷 Greek</span>
+          <span class="tag" data-val="japanese">🇯🇵 Japanese</span>
+          <span class="tag" data-val="thai">🇹🇭 Thai</span>
+          <span class="tag" data-val="french">🇫🇷 French</span>
+          <span class="tag" data-val="korean">🇰🇷 Korean</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⏱️ Cooking Preferences</div>
+        <div class="form-group">
+          <label>Max Prep + Cook Time</label>
+          <div class="pill-row" id="cook-time-pills">
+            <button class="pill" data-val="15">≤15 min</button>
+            <button class="pill active" data-val="30">≤30 min</button>
+            <button class="pill" data-val="45">≤45 min</button>
+            <button class="pill" data-val="60">≤60 min</button>
+            <button class="pill" data-val="90">Any</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Skill Level</label>
+          <div class="pill-row" id="skill-pills">
+            <button class="pill active" data-val="beginner">Beginner</button>
+            <button class="pill" data-val="intermediate">Intermediate</button>
+            <button class="pill" data-val="advanced">Advanced</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Meal Prep?</label>
+          <div class="pill-row" id="prep-pills">
+            <button class="pill active" data-val="yes">Yes, batch cook</button>
+            <button class="pill" data-val="no">Fresh daily</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🚫 Foods to Avoid</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:10px">Foods you dislike, that upset your stomach, or are out of budget.</p>
+        <div class="blocked-input-row">
+          <input type="text" id="block-input" placeholder="e.g. cilantro, shellfish…" onkeydown="if(event.key==='Enter')addBlocked()">
+          <button class="btn btn-danger btn-sm" onclick="addBlocked()">+ Add</button>
+        </div>
+        <div class="blocked-list" id="blocked-list"></div>
+        <div class="divider"></div>
+        <div class="section-label">Quick add</div>
+        <div class="tag-group">
+          <span class="tag" onclick="addBlockedItem('Shellfish')">Shellfish</span>
+          <span class="tag" onclick="addBlockedItem('Gluten')">Gluten</span>
+          <span class="tag" onclick="addBlockedItem('Dairy')">Dairy</span>
+          <span class="tag" onclick="addBlockedItem('Pork')">Pork</span>
+          <span class="tag" onclick="addBlockedItem('Eggs')">Eggs</span>
+          <span class="tag" onclick="addBlockedItem('Soy')">Soy</span>
+          <span class="tag" onclick="addBlockedItem('Nuts')">Nuts</span>
+          <span class="tag" onclick="addBlockedItem('Cilantro')">Cilantro</span>
+          <span class="tag" onclick="addBlockedItem('Mushrooms')">Mushrooms</span>
+          <span class="tag" onclick="addBlockedItem('Onions')">Onions</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:16px;" onclick="generateMealPlan()">
+        🌿 Generate My Meal Plan
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SETTINGS PAGE ══════════════ -->
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <h1>Settings</h1>
+    <p>API keys, location, and app preferences. Saved to your browser.</p>
+  </div>
+  <div class="settings-grid">
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card" style="border:1.5px solid #c8dfc8;">
+        <div class="card-title">🤖 OpenAI API Key</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:14px">Required to generate meal plans. Stored only in your browser's local storage.</p>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>API Key</label>
+          <div class="key-row">
+            <input type="password" id="settings-openai-key" placeholder="sk-…">
+            <button class="btn btn-secondary btn-sm" onclick="toggleVis('settings-openai-key')">👁️</button>
+          </div>
+          <p style="font-size:12px;color:var(--mid-gray);margin-top:6px"><a href="https://platform.openai.com/api-keys" target="_blank" style="color:var(--sage-dark)">platform.openai.com/api-keys</a></p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettingsKey('openai')">💾 Save Key</button>
+      </div>
+
+      <div class="card" style="border:1.5px solid #c8dce8;">
+        <div class="card-title">📸 Unsplash API Key <span style="font-size:11px;font-weight:400;color:var(--mid-gray)">(optional)</span></div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:14px">Shows food photos on meal cards. Free tier is plenty. If a good match isn't found, no image is shown.</p>
+        <div class="form-group" style="margin-bottom:10px">
+          <label>Access Key</label>
+          <div class="key-row">
+            <input type="password" id="settings-unsplash-key" placeholder="Your Unsplash Access Key…">
+            <button class="btn btn-secondary btn-sm" onclick="toggleVis('settings-unsplash-key')">👁️</button>
+          </div>
+          <p style="font-size:12px;color:var(--mid-gray);margin-top:6px"><a href="https://unsplash.com/developers" target="_blank" style="color:var(--sage-dark)">unsplash.com/developers</a></p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettingsKey('unsplash')">💾 Save Key</button>
+      </div>
+
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;">
+
+      <div class="card">
+        <div class="card-title">📍 Location & Store</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:14px">Used to price groceries accurately for your area.</p>
+        <div class="form-group">
+          <label>City or Region</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="settings-location" placeholder="e.g. Salt Lake City, UT" style="flex:1">
+            <button class="btn btn-secondary btn-sm" id="settings-detect-btn" onclick="detectLocation('settings-location','settings-detect-btn')">📡 Detect</button>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Store Type</label>
+          <div class="pill-row" id="settings-store-pills">
+            <button class="pill active" data-val="budget">Budget</button>
+            <button class="pill" data-val="mid">Mid-Range</button>
+            <button class="pill" data-val="premium">Premium</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettingsLocation()">💾 Save Location</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗑️ Reset</div>
+        <p style="font-size:13px;color:var(--mid-gray);margin-bottom:14px">Clear all saved data and start fresh.</p>
+        <button class="btn btn-danger btn-sm" onclick="resetAll()">Reset Everything</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MEAL PLAN PAGE ══════════════ -->
+<div class="page" id="page-mealplan">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div><h1>Weekly Plan</h1><p>Your personalized AI-generated meal schedule.</p></div>
+    <div class="week-actions" style="margin-bottom:0;">
+      <button class="btn btn-secondary btn-sm" onclick="generateMealPlan()">🔄 Regenerate Week</button>
+      <button class="btn btn-secondary btn-sm" onclick="showPage('grocery')">🛒 View Groceries</button>
+    </div>
+  </div>
+  <div id="mp-empty" class="empty-state">
+    <div class="empty-icon">🥗</div>
+    <h3>No meal plan yet</h3>
+    <p>Set your goals and generate a plan to get started.</p>
+    <button class="btn btn-primary" onclick="showPage('goals')">⚙️ Set Goals</button>
+  </div>
+  <div id="mp-content" style="display:none;">
+    <div class="days-scroll" id="days-scroll"></div>
+    <div id="day-content"></div>
+  </div>
+</div>
+
+<!-- ══════════════ GROCERY PAGE ══════════════ -->
+<div class="page" id="page-grocery">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+    <div><h1>Grocery List</h1><p>Everything you need, organised by aisle.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="checkAll()">✅ Check All</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearChecked()">🗑️ Clear Checked</button>
+      <button class="btn btn-primary btn-sm" onclick="copyList()">📋 Copy List</button>
+    </div>
+  </div>
+  <div id="gr-empty" class="empty-state">
+    <div class="empty-icon">🛒</div>
+    <h3>No grocery list yet</h3>
+    <p>Generate a meal plan first.</p>
+    <button class="btn btn-primary" onclick="showPage('goals')">Get Started</button>
+  </div>
+  <div id="gr-content" style="display:none;">
+    <div class="card" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div><div style="font-size:13px;color:var(--mid-gray);">Estimated Total</div><div style="font-size:1.8rem;font-weight:700;color:var(--sage-dark);" id="gr-total">$0</div></div>
+      <div style="text-align:right;"><div style="font-size:13px;color:var(--mid-gray);">Weekly Budget</div><div style="font-size:1.1rem;font-weight:600;color:var(--mid-gray);" id="gr-budget">$150</div></div>
+      <div style="flex:1 1 200px;">
+        <div style="height:10px;background:var(--light-gray);border-radius:10px;overflow:hidden;"><div id="gr-progress" style="height:100%;border-radius:10px;background:var(--sage);transition:width .5s;"></div></div>
+        <div style="font-size:12px;color:var(--mid-gray);margin-top:4px;" id="gr-status"></div>
+      </div>
+    </div>
+    <div class="grocery-grid" id="gr-sections"></div>
+  </div>
+</div>
+
+<!-- ══════════════ SAVED PAGE ══════════════ -->
+<div class="page" id="page-saved">
+  <div class="page-header"><h1>Saved Favourites</h1><p>Meals and days you've loved.</p></div>
+  <div class="saved-tabs">
+    <button class="saved-tab-btn active" onclick="showSavedTab('meals',this)">❤️ Liked Meals</button>
+    <button class="saved-tab-btn" onclick="showSavedTab('days',this)">📅 Liked Days</button>
+  </div>
+  <div id="sv-meals-section">
+    <div id="sv-meals-empty" class="empty-state"><div class="empty-icon">❤️</div><h3>No saved meals</h3><p>Tap ❤️ on any meal card to save it.</p></div>
+    <div class="saved-grid" id="sv-meals-grid" style="display:none;"></div>
+  </div>
+  <div id="sv-days-section" style="display:none;">
+    <div id="sv-days-empty" class="empty-state"><div class="empty-icon">📅</div><h3>No saved days</h3><p>Tap "Save Day" on any daily plan.</p></div>
+    <div class="saved-grid" id="sv-days-grid" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ══════════════ SCRIPTS ══════════════ -->
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const S = {
+  budget: 150, calories: 1600, goal: 'lose_fast', mealsPerDay: 3,
+  cookTime: 30, skill: 'beginner', mealPrep: 'yes',
+  maxIngredients: 25,
+  dietRestrictions: [], cuisines: [], blocked: [],
+  pantryStaples: ['olive oil','salt and pepper','garlic'],
+  weekPlan: null, currentDay: 0,
+  savedMeals: [], savedDays: [],
+  groceryChecked: {},
+  _groceryData: null,
+  // Backend-style (persisted)
+  openaiKey: '', unsplashKey: '', location: '', storeType: 'budget'
+};
+
+// ─── PERSIST ────────────────────────────────────────────────────────────────
+function saveToStorage() {
+  localStorage.setItem('ef_openai', S.openaiKey);
+  localStorage.setItem('ef_unsplash', S.unsplashKey);
+  localStorage.setItem('ef_location', S.location);
+  localStorage.setItem('ef_store', S.storeType);
+  localStorage.setItem('ef_onboarded', '1');
+}
+function loadFromStorage() {
+  S.openaiKey    = localStorage.getItem('ef_openai')    || '';
+  S.unsplashKey  = localStorage.getItem('ef_unsplash')  || '';
+  S.location     = localStorage.getItem('ef_location')  || '';
+  S.storeType    = localStorage.getItem('ef_store')     || 'budget';
+}
+function isOnboarded() { return !!localStorage.getItem('ef_onboarded'); }
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const map = {goals:0,mealplan:1,grocery:2,saved:3};
+  if(map[page]!==undefined) document.querySelectorAll('.nav-tab')[map[page]]?.classList.add('active');
+  if(page==='settings') populateSettingsPage();
+}
+
+// ─── ONBOARDING ──────────────────────────────────────────────────────────────
+let currentStep = 1;
+const TOTAL_STEPS = 4;
+
+function buildDots() {
+  const el = document.getElementById('step-dots');
+  el.innerHTML = Array.from({length:TOTAL_STEPS},(_,i)=>`<div class="step-dot ${i===0?'active':''}" id="dot-${i+1}"></div>`).join('');
+}
+function updateDots(step) {
+  for(let i=1;i<=TOTAL_STEPS;i++) {
+    const d = document.getElementById('dot-'+i);
+    d.className='step-dot'+(i<step?' done':i===step?' active':'');
+  }
+}
+function showStep(n) {
+  document.querySelectorAll('.modal-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  updateDots(n);
+  currentStep = n;
+}
+function nextStep() { if(currentStep<TOTAL_STEPS) showStep(currentStep+1); }
+function prevStep() { if(currentStep>1) showStep(currentStep-1); }
+
+function saveStepKeys() {
+  const ok = document.getElementById('ob-openai-key').value.trim();
+  const uk = document.getElementById('ob-unsplash-key').value.trim();
+  if(!ok) { showToast('Please enter your OpenAI key to continue.','error'); return; }
+  S.openaiKey = ok; S.unsplashKey = uk; nextStep();
+}
+function saveStepLocation() {
+  S.location = document.getElementById('ob-location').value.trim();
+  const pills = document.getElementById('ob-store-pills');
+  pills.querySelectorAll('.pill').forEach(p=>{ if(p.classList.contains('active')) S.storeType=p.dataset.val; });
+  nextStep();
+}
+function finishOnboarding() {
+  saveToStorage();
+  document.getElementById('onboard-modal').classList.remove('show');
+  showToast('Welcome to EasyFeed! 🌿','success');
+}
+function skipOnboarding() {
+  saveToStorage();
+  document.getElementById('onboard-modal').classList.remove('show');
+}
+
+// Pill init for onboarding store
+document.getElementById('ob-store-pills').querySelectorAll('.pill').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    document.getElementById('ob-store-pills').querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ─── SETTINGS PAGE ───────────────────────────────────────────────────────────
+function populateSettingsPage() {
+  document.getElementById('settings-openai-key').value  = S.openaiKey  || '';
+  document.getElementById('settings-unsplash-key').value= S.unsplashKey|| '';
+  document.getElementById('settings-location').value    = S.location   || '';
+  setActivePill('settings-store-pills', S.storeType);
+}
+function saveSettingsKey(type) {
+  if(type==='openai') {
+    S.openaiKey = document.getElementById('settings-openai-key').value.trim();
+    if(!S.openaiKey) { showToast('Key cannot be empty','error'); return; }
+  } else {
+    S.unsplashKey = document.getElementById('settings-unsplash-key').value.trim();
+  }
+  saveToStorage(); showToast('Key saved ✓','success');
+}
+function saveSettingsLocation() {
+  S.location   = document.getElementById('settings-location').value.trim();
+  const pills  = document.getElementById('settings-store-pills');
+  pills.querySelectorAll('.pill').forEach(p=>{ if(p.classList.contains('active')) S.storeType=p.dataset.val; });
+  saveToStorage(); showToast('Location saved ✓','success');
+}
+function resetAll() {
+  if(!confirm('Reset all EasyFeed data? This cannot be undone.')) return;
+  localStorage.clear(); location.reload();
+}
+initSinglePills('settings-store-pills', v=>S.storeType=v);
+
+// ─── PILL HELPERS ────────────────────────────────────────────────────────────
+function initSinglePills(groupId, cb) {
+  document.getElementById(groupId).querySelectorAll('.pill').forEach(btn=>{
+    btn.addEventListener('click',function(){
+      document.getElementById(groupId).querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      if(cb) cb(this.dataset.val);
+    });
+  });
+}
+function setActivePill(groupId, val) {
+  document.getElementById(groupId).querySelectorAll('.pill').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val===val);
+  });
+}
+
+initSinglePills('goal-pills',          v=>S.goal=v);
+initSinglePills('meals-per-day-pills', v=>{ S.mealsPerDay=parseInt(v); updatePerMeal(); });
+initSinglePills('cook-time-pills',     v=>S.cookTime=parseInt(v));
+initSinglePills('skill-pills',         v=>S.skill=v);
+initSinglePills('prep-pills',          v=>S.mealPrep=v);
+
+// Multi-select tags
+function initMultiTags(groupId, arr) {
+  document.getElementById(groupId).querySelectorAll('.tag').forEach(tag=>{
+    tag.addEventListener('click',function(){
+      this.classList.toggle('selected');
+      const v=this.dataset.val;
+      if(arr.includes(v)) arr.splice(arr.indexOf(v),1); else arr.push(v);
+    });
+  });
+}
+initMultiTags('diet-tags',    S.dietRestrictions);
+initMultiTags('cuisine-tags', S.cuisines);
+initMultiTags('pantry-tags',  S.pantryStaples);
+
+// ─── BUDGET ──────────────────────────────────────────────────────────────────
+function onBudgetChange(v) {
+  S.budget=parseInt(v);
+  document.getElementById('budget-val').textContent='$'+v;
+  updatePerMeal();
+}
+function updatePerMeal() {
+  document.getElementById('per-day').textContent='$'+Math.round(S.budget/7);
+  document.getElementById('per-meal').textContent='$'+Math.round(S.budget/7/S.mealsPerDay);
+}
+
+document.getElementById('max-ing-slider').addEventListener('input',function(){
+  S.maxIngredients=parseInt(this.value);
+  document.getElementById('max-ing-val').textContent=this.value+' items';
+});
+
+// ─── BLOCKED FOODS ───────────────────────────────────────────────────────────
+function addBlocked() {
+  const inp=document.getElementById('block-input');
+  const v=inp.value.trim(); if(!v) return;
+  addBlockedItem(v); inp.value='';
+}
+function addBlockedItem(item) {
+  if(S.blocked.find(b=>b.toLowerCase()===item.toLowerCase())) return;
+  S.blocked.push(item); renderBlocked();
+}
+function removeBlocked(item) { S.blocked=S.blocked.filter(b=>b!==item); renderBlocked(); }
+function renderBlocked() {
+  const el=document.getElementById('blocked-list');
+  if(!S.blocked.length){ el.innerHTML='<span style="font-size:13px;color:var(--mid-gray);">Nothing blocked yet</span>'; return; }
+  el.innerHTML=S.blocked.map(b=>`<span class="blocked-chip">${b}<button onclick="removeBlocked('${b}')">×</button></span>`).join('');
+}
+renderBlocked();
+
+// ─── DETECT LOCATION ─────────────────────────────────────────────────────────
+async function detectLocation(inputId, btnId) {
+  const btn=document.getElementById(btnId);
+  btn.textContent='⏳'; btn.disabled=true;
+  try {
+    if(!navigator.geolocation) throw new Error('Not supported');
+    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:8000}));
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+    const d = await r.json();
+    const city = d.address?.city||d.address?.town||d.address?.village||d.address?.county||'';
+    const st   = d.address?.state||'';
+    const loc  = city?`${city}, ${st}`:st;
+    document.getElementById(inputId).value=loc;
+    if(inputId==='ob-location') S.location=loc;
+    btn.textContent='✅';
+    setTimeout(()=>{ btn.textContent='📡 Detect'; btn.disabled=false; },2000);
+  } catch(e) {
+    btn.textContent='📡 Detect'; btn.disabled=false;
+    showToast('Could not detect location. Type it manually.','error');
+  }
+}
+
+// ─── KEY VISIBILITY ──────────────────────────────────────────────────────────
+function toggleVis(id) {
+  const i=document.getElementById(id);
+  i.type=i.type==='password'?'text':'password';
+}
+
+// ─── API CALL ─────────────────────────────────────────────────────────────────
+async function gptFetch(prompt, maxTokens=8000) {
+  if(!S.openaiKey) throw new Error('No OpenAI key. Go to ⚙️ Settings to add one.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.openaiKey},
+    body:JSON.stringify({model:'gpt-4o',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.choices[0].message.content.replace(/```json|```/g,'').trim();
+}
+
+// ─── MEAL TYPES ──────────────────────────────────────────────────────────────
+function getMealTypes(n) {
+  if(n===2) return ['Breakfast','Dinner'];
+  if(n===3) return ['Breakfast','Lunch','Dinner'];
+  if(n===4) return ['Breakfast','Lunch','Snack','Dinner'];
+  return ['Breakfast','Morning Snack','Lunch','Afternoon Snack','Dinner'];
+}
+
+// ─── GENERATE WEEK ───────────────────────────────────────────────────────────
+async function generateMealPlan() {
+  if(!S.openaiKey){ showToast('Add your OpenAI key in ⚙️ Settings first.','error'); showPage('settings'); return; }
+  showLoading('Crafting your personalized meal plan…','This may take 15–30 seconds');
+  const mealTypes = getMealTypes(S.mealsPerDay);
+  const perMeal   = Math.round(S.budget/7/S.mealsPerDay*100)/100;
+
+  const prompt = `You are a professional nutritionist and meal planner. Create a 7-day meal plan.
+
+USER PROFILE:
+- Weekly budget: $${S.budget} (~$${perMeal}/meal)
+- Daily calories: ${S.calories} kcal
+- Weight goal: ${S.goal}
+- Meals/day: ${S.mealsPerDay} (${mealTypes.join(', ')})
+- Max cook time: ${S.cookTime} min
+- Skill: ${S.skill}
+- Meal prep: ${S.mealPrep}
+- Diet restrictions: ${S.dietRestrictions.join(', ')||'none'}
+- Cuisines: ${S.cuisines.join(', ')||'varied'}
+- AVOID completely: ${S.blocked.join(', ')||'none'}
+- Location: ${S.location||'United States'}
+- Store type: ${S.storeType}
+- Pantry staples already owned (NEVER include these in any ingredients array): ${S.pantryStaples.join(', ')}
+
+STRICT INGREDIENT EFFICIENCY RULES — THIS IS CRITICAL:
+1. The entire 7-day plan must use AT MOST ${S.maxIngredients} unique grocery items total (excluding pantry staples).
+2. To achieve this, deliberately reuse the same proteins across multiple days. E.g. one pack of chicken thighs appears in 3 different meals.
+3. Reuse vegetables across meals. E.g. spinach in Monday breakfast and Wednesday lunch.
+4. Reuse grains/carbs. E.g. brown rice appears in 4 meals across the week.
+5. Never list pantry staples in any ingredients array.
+6. Favour versatile, cheap ingredients that work across many dishes.
+7. Price ingredients using ${S.location||'US'} ${S.storeType} store prices.
+
+Respond ONLY with valid JSON (no markdown, no backticks):
+{"days":[{"day":"Monday","totalCost":21.50,"totalCalories":1580,"macros":{"protein":120,"carbs":150,"fat":55},"meals":[{"type":"Breakfast","name":"Meal name","cost":4.50,"calories":420,"protein":28,"carbs":45,"fat":14,"prepTime":"5 min","cookTime":"10 min","description":"Brief appetizing 1-2 sentence description.","ingredients":["item1","item2","item3"]}]}]}
+
+Generate all 7 days (Monday–Sunday) with ${S.mealsPerDay} meals each.`;
+
+  try {
+    const text = await gptFetch(prompt, 8000);
+    const plan  = JSON.parse(text);
+    S.weekPlan=plan; S.currentDay=0; S.groceryChecked={};
+    hideLoading();
+    renderMealPlan();
+    generateGroceryList();
+    showPage('mealplan');
+    showToast('Meal plan ready! 🌿','success');
+  } catch(e) {
+    hideLoading();
+    showToast('Failed: '+e.message,'error');
+    console.error(e);
+  }
+}
+
+// ─── RENDER PLAN ─────────────────────────────────────────────────────────────
+function renderMealPlan() {
+  if(!S.weekPlan) return;
+  document.getElementById('mp-empty').style.display='none';
+  document.getElementById('mp-content').style.display='block';
+  renderDayTabs(); renderDay(S.currentDay);
+}
+function renderDayTabs() {
+  document.getElementById('days-scroll').innerHTML = S.weekPlan.days.map((d,i)=>`
+    <div class="day-tab ${i===S.currentDay?'active':''}" onclick="switchDay(${i})">
+      <div>${d.day.slice(0,3)}</div>
+      <div class="cost">$${parseFloat(d.totalCost||0).toFixed(2)}</div>
+    </div>`).join('');
+}
+function switchDay(i){ S.currentDay=i; renderDayTabs(); renderDay(i); }
+
+function renderDay(i) {
+  const day=S.weekPlan.days[i];
+  const m=day.macros||{};
+  const tot=(m.protein||0)+(m.carbs||0)+(m.fat||0)||1;
+  const pp=Math.round((m.protein||0)/tot*100);
+  const cp=Math.round((m.carbs||0)/tot*100);
+  const fp=100-pp-cp;
+  const saved=day._saved;
+  document.getElementById('day-content').innerHTML=`
+    <div class="day-summary">
+      <div><div class="label">${day.day}</div><div class="total">$${parseFloat(day.totalCost||0).toFixed(2)}</div></div>
+      <div class="macros">
+        <div class="macro"><div class="val">${day.totalCalories||'--'}</div><div class="key">kcal</div></div>
+        <div class="macro"><div class="val">${m.protein||'--'}g</div><div class="key">protein</div></div>
+        <div class="macro"><div class="val">${m.carbs||'--'}g</div><div class="key">carbs</div></div>
+        <div class="macro"><div class="val">${m.fat||'--'}g</div><div class="key">fat</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4)" onclick="regenerateDay(${i})">🔄 Redo Day</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4)" onclick="saveDay(${i})">${saved?'✅ Saved':'📅 Save Day'}</button>
+      </div>
+    </div>
+    <div class="macro-bar">
+      <div class="macro-bar-labels"><span style="color:var(--terra)">Protein ${m.protein||0}g</span><span style="color:var(--gold)">Carbs ${m.carbs||0}g</span><span style="color:var(--sage)">Fat ${m.fat||0}g</span></div>
+      <div class="macro-bar-track"><div class="macro-bar-protein" style="width:${pp}%"></div><div class="macro-bar-carbs" style="width:${cp}%"></div><div class="macro-bar-fat" style="width:${fp}%"></div></div>
+    </div>
+    ${day.meals.map((meal,mi)=>renderMealCard(meal,i,mi)).join('')}`;
+  // load images after paint
+  if(S.unsplashKey) day.meals.forEach((m,mi)=>setTimeout(()=>fetchMealImage(m.name,`${i}-${mi}`),mi*120));
+}
+
+// ─── MEAL CARD ────────────────────────────────────────────────────────────────
+function renderMealCard(meal, di, mi) {
+  const cid=`${di}-${mi}`;
+  const liked=S.savedMeals.find(s=>s.name===meal.name);
+  return `
+    <div class="meal-card" id="meal-${cid}">
+      <div class="meal-img-wrap meal-img-none" id="img-${cid}"></div>
+      <div class="meal-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div>
+            <div class="meal-type-label">${meal.type}</div>
+            <div class="meal-name">${meal.name}</div>
+            <div class="meal-meta">
+              <span>🔥 ${meal.calories||'--'} kcal</span>
+              <span>⏱️ ${meal.prepTime||'--'} prep · ${meal.cookTime||'--'} cook</span>
+              <span>💪 ${meal.protein||'--'}g protein</span>
+            </div>
+          </div>
+          <div class="meal-cost">$${parseFloat(meal.cost||0).toFixed(2)}</div>
+        </div>
+        <div class="meal-desc">${meal.description||''}</div>
+        <div class="meal-ingredients">
+          <strong>Ingredients:</strong>
+          <div class="ingredient-list">${(meal.ingredients||[]).map(i=>`<span class="ingredient-chip">${i}</span>`).join('')}</div>
+        </div>
+        <div class="meal-actions">
+          <button class="btn btn-secondary btn-sm" onclick="regenerateMeal(${di},${mi})">🔄 Swap</button>
+          <button class="btn btn-sm ${liked?'btn-gold':'btn-secondary'}" id="save-btn-${cid}" onclick="toggleSaveMeal(${di},${mi},this)">${liked?'❤️ Saved':'🤍 Save'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── IMAGES ──────────────────────────────────────────────────────────────────
+const imgCache = {};
+
+async function fetchMealImage(mealName, cid) {
+  if(!S.unsplashKey) return;
+  const wrap = document.getElementById('img-'+cid);
+  if(!wrap) return;
+  const key = mealName.toLowerCase();
+
+  if(imgCache[key] === null) { return; } // known no-match
+  if(imgCache[key]) { applyImage(wrap, imgCache[key]); return; }
+
+  // skeleton
+  wrap.className='meal-img-wrap';
+  wrap.innerHTML='<div class="meal-img-skeleton"></div>';
+
+  try {
+    // Try two progressively simpler queries
+    const queries = [
+      encodeURIComponent(mealName + ' food dish plated'),
+      encodeURIComponent(mealName.split(' ').slice(0,3).join(' ') + ' food')
+    ];
+    let photo = null;
+    for(const q of queries) {
+      const r = await fetch(`https://api.unsplash.com/search/photos?query=${q}&per_page=3&orientation=landscape&content_filter=high`,
+        {headers:{'Authorization':'Client-ID '+S.unsplashKey}});
+      const d = await r.json();
+      if(d.results?.length) {
+        // Pick the result with the highest relevance (first) and check it's food-like
+        photo = d.results[0];
+        break;
+      }
+    }
+    if(photo) {
+      const imgData = {url:photo.urls.regular, thumb:photo.urls.small, name:photo.user.name, link:photo.user.links.html};
+      imgCache[key] = imgData;
+      applyImage(wrap, imgData);
+    } else {
+      imgCache[key] = null; // mark as no result
+      wrap.className='meal-img-none'; wrap.innerHTML='';
+    }
+  } catch(e) {
+    wrap.className='meal-img-none'; wrap.innerHTML='';
+  }
+}
+
+function applyImage(wrap, d) {
+  wrap.className='meal-img-wrap';
+  wrap.innerHTML=`
+    <img src="${d.thumb}" onload="this.src='${d.url}'" onerror="this.closest('.meal-img-wrap').className='meal-img-none';this.closest('.meal-img-wrap').innerHTML='';" alt="Meal photo">
+    <a href="${d.link}?utm_source=easyfeed&utm_medium=referral" target="_blank" class="meal-img-credit">📷 ${d.name} / Unsplash</a>`;
+}
+
+// ─── REGENERATE DAY ──────────────────────────────────────────────────────────
+async function regenerateDay(di) {
+  showLoading('Regenerating '+S.weekPlan.days[di].day+'…','');
+  const mealTypes=getMealTypes(S.mealsPerDay);
+  const perDay=Math.round(S.budget/7*100)/100;
+  const prompt=`You are a nutritionist. Create a DIFFERENT ${S.weekPlan.days[di].day} meal plan.
+- Budget: $${perDay} for the day
+- Calories: ${S.calories} kcal
+- Goal: ${S.goal}
+- Meals: ${mealTypes.join(', ')}
+- Cook time max: ${S.cookTime} min
+- Restrictions: ${S.dietRestrictions.join(', ')||'none'}
+- Avoid: ${S.blocked.join(', ')||'none'}
+- Location: ${S.location||'US'}, store: ${S.storeType}
+- Pantry staples (NEVER include in ingredients): ${S.pantryStaples.join(', ')}
+- Try to reuse common ingredients from a weekly meal plan to keep grocery list short.
+Respond ONLY with JSON (no markdown):
+{"day":"${S.weekPlan.days[di].day}","totalCost":20.00,"totalCalories":1600,"macros":{"protein":120,"carbs":150,"fat":55},"meals":[{"type":"Breakfast","name":"...","cost":5.00,"calories":400,"protein":25,"carbs":45,"fat":12,"prepTime":"5 min","cookTime":"10 min","description":"...","ingredients":["..."]}]}`;
+  try {
+    const text=await gptFetch(prompt,2500);
+    S.weekPlan.days[di]=JSON.parse(text);
+    hideLoading(); renderDayTabs(); renderDay(di); generateGroceryList();
+    showToast('Day regenerated!','success');
+  } catch(e){ hideLoading(); showToast('Failed: '+e.message,'error'); }
+}
+
+// ─── REGENERATE MEAL ─────────────────────────────────────────────────────────
+async function regenerateMeal(di, mi) {
+  const meal=S.weekPlan.days[di].meals[mi];
+  showLoading('Finding a new '+meal.type+'…','');
+  const prompt=`Suggest ONE different ${meal.type} meal. Must differ from "${meal.name}".
+- Budget: ~$${parseFloat(meal.cost||0).toFixed(2)}
+- Calories: ~${Math.round(S.calories/S.mealsPerDay)} kcal
+- Restrictions: ${S.dietRestrictions.join(', ')||'none'}
+- Avoid: ${S.blocked.join(', ')||'none'}
+- Cook time max: ${S.cookTime} min
+- Location: ${S.location||'US'}, store: ${S.storeType}
+- Pantry staples (NEVER include): ${S.pantryStaples.join(', ')}
+Respond ONLY with JSON: {"type":"${meal.type}","name":"...","cost":5.00,"calories":400,"protein":25,"carbs":45,"fat":12,"prepTime":"5 min","cookTime":"10 min","description":"...","ingredients":["..."]}`;
+  try {
+    const text=await gptFetch(prompt,800);
+    S.weekPlan.days[di].meals[mi]=JSON.parse(text);
+    const meals=S.weekPlan.days[di].meals;
+    S.weekPlan.days[di].totalCost=meals.reduce((s,m)=>s+parseFloat(m.cost||0),0);
+    S.weekPlan.days[di].totalCalories=meals.reduce((s,m)=>s+parseInt(m.calories||0),0);
+    hideLoading(); renderDayTabs(); renderDay(di); generateGroceryList();
+    showToast('Meal swapped!','success');
+  } catch(e){ hideLoading(); showToast('Failed: '+e.message,'error'); }
+}
+
+// ─── SAVE MEAL / DAY ─────────────────────────────────────────────────────────
+function toggleSaveMeal(di,mi,btn) {
+  const meal=S.weekPlan.days[di].meals[mi];
+  const idx=S.savedMeals.findIndex(s=>s.name===meal.name);
+  if(idx>=0){
+    S.savedMeals.splice(idx,1);
+    btn.className='btn btn-secondary btn-sm'; btn.textContent='🤍 Save';
+    showToast('Removed from saved meals');
+  } else {
+    S.savedMeals.push({...meal,savedAt:new Date().toLocaleDateString()});
+    btn.className='btn btn-gold btn-sm'; btn.textContent='❤️ Saved';
+    showToast('Saved! ❤️','success');
+  }
+  updateBadge(); renderSaved();
+}
+function saveDay(di) {
+  const day=S.weekPlan.days[di];
+  if(day._saved){ showToast('Already saved!'); return; }
+  day._saved=true;
+  S.savedDays.push({...day, savedAt:new Date().toLocaleDateString()});
+  renderDay(di); updateBadge(); renderSaved();
+  showToast('Day saved! 📅','success');
+}
+function updateBadge() {
+  const n=S.savedMeals.length+S.savedDays.length;
+  const b=document.getElementById('saved-badge');
+  b.style.display=n>0?'inline':'none'; b.textContent=n;
+}
+
+// ─── SAVED PAGE ──────────────────────────────────────────────────────────────
+function showSavedTab(tab,btn) {
+  document.querySelectorAll('.saved-tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  document.getElementById('sv-meals-section').style.display=tab==='meals'?'block':'none';
+  document.getElementById('sv-days-section').style.display=tab==='days'?'block':'none';
+}
+function renderSaved() {
+  // meals
+  const mg=document.getElementById('sv-meals-grid'), me=document.getElementById('sv-meals-empty');
+  if(!S.savedMeals.length){mg.style.display='none';me.style.display='block';}
+  else {
+    me.style.display='none'; mg.style.display='grid';
+    mg.innerHTML=S.savedMeals.map((m,i)=>`
+      <div class="saved-card">
+        <div class="meal-type-label">${m.type}</div>
+        <div class="meal-name" style="font-size:1rem;margin-bottom:6px">${m.name}</div>
+        <div class="meal-meta" style="margin-bottom:10px"><span>🔥${m.calories}kcal</span><span>💰$${parseFloat(m.cost).toFixed(2)}</span></div>
+        <div style="font-size:13px;color:var(--mid-gray);margin-bottom:10px">${m.description||''}</div>
+        <div style="font-size:12px;color:var(--mid-gray);margin-bottom:10px">Saved ${m.savedAt}</div>
+        <button class="btn btn-danger btn-sm" onclick="removeSavedMeal(${i})">🗑️ Remove</button>
+      </div>`).join('');
+  }
+  // days
+  const dg=document.getElementById('sv-days-grid'), de=document.getElementById('sv-days-empty');
+  if(!S.savedDays.length){dg.style.display='none';de.style.display='block';}
+  else {
+    de.style.display='none'; dg.style.display='grid';
+    dg.innerHTML=S.savedDays.map((d,i)=>`
+      <div class="saved-card">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:6px">📅 ${d.day}</div>
+        <div style="font-size:1rem;font-weight:600;margin-bottom:6px">${d.meals?.length||0} meals · $${parseFloat(d.totalCost||0).toFixed(2)} · ${d.totalCalories||'--'} kcal</div>
+        <div style="font-size:13px;color:var(--mid-gray);margin-bottom:10px">${d.meals?.map(m=>m.name).join(' · ')||''}</div>
+        <div style="font-size:12px;color:var(--mid-gray);margin-bottom:10px">Saved ${d.savedAt}</div>
+        <button class="btn btn-danger btn-sm" onclick="removeSavedDay(${i})">🗑️ Remove</button>
+      </div>`).join('');
+  }
+}
+function removeSavedMeal(i){S.savedMeals.splice(i,1);updateBadge();renderSaved();showToast('Removed');}
+function removeSavedDay(i){S.savedDays.splice(i,1);updateBadge();renderSaved();showToast('Removed');}
+
+// ─── GROCERY LIST ─────────────────────────────────────────────────────────────
+async function generateGroceryList() {
+  if(!S.weekPlan) return;
+  showLoading('Building your grocery list…','Consolidating ingredients');
+  const allIng=[];
+  S.weekPlan.days.forEach(d=>d.meals.forEach(m=>(m.ingredients||[]).forEach(i=>allIng.push(i))));
+  const unique=[...new Set(allIng.map(i=>i.toLowerCase()))];
+
+  const prompt=`You are a grocery expert. Consolidate this ingredient list from a 7-day meal plan into a minimal shopping list.
+
+Raw ingredients: ${unique.join(', ')}
+Pantry staples to EXCLUDE (user already owns): ${S.pantryStaples.join(', ')}
+Location: ${S.location||'US'}, store type: ${S.storeType}
+Target: AT MOST ${S.maxIngredients} unique line items total across all categories.
+
+Rules:
+1. Merge duplicates and similar items aggressively (e.g. "chicken breast" + "chicken" = one item).
+2. Remove any pantry staples from the list entirely.
+3. Combine quantities sensibly (e.g. "spinach x3 uses" → "Spinach, 3 bags").
+4. Price each item realistically for ${S.location||'US'} ${S.storeType} stores.
+5. If the list would exceed ${S.maxIngredients} items, consolidate further or merge similar items.
+6. Note bulk-buy opportunities in the item name where relevant.
+
+Respond ONLY with JSON:
+{"totalCost":120.00,"itemCount":22,"categories":[{"name":"Produce","items":[{"name":"Spinach","quantity":"3 bags (5oz each)","estimatedCost":8.97}]}]}
+
+Categories to use: Produce, Proteins, Dairy & Eggs, Grains & Bread, Pantry & Spices, Frozen, Beverages.
+Only include non-empty categories.`;
+
+  try {
+    const text=await gptFetch(prompt,2500);
+    const data=JSON.parse(text);
+    S._groceryData=data; hideLoading(); renderGrocery(data);
+  } catch(e){ hideLoading(); renderBasicGrocery(); }
+}
+
+function renderGrocery(data) {
+  document.getElementById('gr-empty').style.display='none';
+  document.getElementById('gr-content').style.display='block';
+  const total=parseFloat(data.totalCost||0);
+  const pct=Math.min(100,Math.round(total/S.budget*100));
+  document.getElementById('gr-total').textContent='$'+total.toFixed(2);
+  document.getElementById('gr-budget').textContent='$'+S.budget;
+  document.getElementById('gr-progress').style.width=pct+'%';
+  document.getElementById('gr-progress').style.background=pct>100?'var(--terra)':'var(--sage)';
+  document.getElementById('gr-status').textContent=pct<=100
+    ?`${pct}% of budget · $${(S.budget-total).toFixed(2)} remaining`
+    :`Over budget by $${(total-S.budget).toFixed(2)}`;
+  const catIcons={Produce:'🥦',Proteins:'🍗','Dairy & Eggs':'🥚','Grains & Bread':'🍞','Pantry & Spices':'🧂',Frozen:'❄️',Beverages:'🥤'};
+  document.getElementById('gr-sections').innerHTML=(data.categories||[]).filter(c=>c.items?.length).map(cat=>`
+    <div class="card">
+      <div class="grocery-section-title">${catIcons[cat.name]||'🛒'} ${cat.name}</div>
+      ${cat.items.map((item,i)=>{
+        const k=cat.name+'_'+i;
+        return `<div class="grocery-item">
+          <input type="checkbox" id="gi-${k}" ${S.groceryChecked[k]?'checked':''} onchange="toggleCheck('${k}',this)">
+          <span class="item-name ${S.groceryChecked[k]?'checked':''}" id="gn-${k}">${item.name}</span>
+          <span class="item-qty">${item.quantity||''}</span>
+          <span class="item-cost">$${parseFloat(item.estimatedCost||0).toFixed(2)}</span>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+function renderBasicGrocery() {
+  document.getElementById('gr-empty').style.display='none';
+  document.getElementById('gr-content').style.display='block';
+  const all=[]; S.weekPlan?.days.forEach(d=>d.meals.forEach(m=>(m.ingredients||[]).forEach(i=>all.push(i))));
+  document.getElementById('gr-sections').innerHTML=`<div class="card" style="grid-column:1/-1">
+    <div class="grocery-section-title">🛒 All Items</div>
+    ${[...new Set(all)].map((item,i)=>`<div class="grocery-item"><input type="checkbox" id="gi-all-${i}"><span class="item-name">${item}</span></div>`).join('')}
+  </div>`;
+}
+function toggleCheck(k,cb) {
+  S.groceryChecked[k]=cb.checked;
+  const n=document.getElementById('gn-'+k);
+  if(n) n.classList.toggle('checked',cb.checked);
+}
+function checkAll(){ document.querySelectorAll('#gr-sections input[type="checkbox"]').forEach(cb=>{ cb.checked=true; const k=cb.id.replace('gi-',''); S.groceryChecked[k]=true; const n=document.getElementById('gn-'+k); if(n)n.classList.add('checked'); }); }
+function clearChecked(){ document.querySelectorAll('#gr-sections input[type="checkbox"]:checked').forEach(cb=>{ cb.checked=false; const k=cb.id.replace('gi-',''); S.groceryChecked[k]=false; const n=document.getElementById('gn-'+k); if(n)n.classList.remove('checked'); }); }
+function copyList() {
+  if(!S._groceryData){ showToast('No list to copy'); return; }
+  let t='🛒 GROCERY LIST — EasyFeed\n\n';
+  S._groceryData.categories.forEach(c=>{ t+=c.name.toUpperCase()+'\n'; c.items.forEach(i=>{ t+=`  • ${i.name} — ${i.quantity||''}\n`; }); t+='\n'; });
+  t+=`Estimated Total: $${S._groceryData.totalCost?.toFixed(2)}`;
+  navigator.clipboard.writeText(t).then(()=>showToast('List copied!','success')).catch(()=>showToast('Could not copy'));
+}
+
+// ─── LOADING / TOAST ─────────────────────────────────────────────────────────
+function showLoading(msg, sub='') {
+  document.getElementById('loading-text').textContent=msg;
+  document.getElementById('loading-sub').textContent=sub;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading(){ document.getElementById('loading').classList.remove('show'); }
+function showToast(msg,type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+loadFromStorage();
+buildDots();
+if(!isOnboarded()) {
+  document.getElementById('onboard-modal').classList.add('show');
+}
+</script>
+</body>
+</html>
